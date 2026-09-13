@@ -1,0 +1,102 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── Helper functions ──────────────────────────────────────────────
+
+    // Returns true if the caller is authenticated with a valid UID.
+    function isAuthenticated() {
+      return request.auth != null && request.auth.uid != null;
+    }
+
+    // Returns true if the caller has the "admin" role in the users collection.
+    // This is the authoritative server-side role check.
+    function isAdmin() {
+      return isAuthenticated()
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // ── users/{uid} ───────────────────────────────────────────────────
+
+    match /users/{uid} {
+      // A user may read their own document only.
+      allow read: if isAuthenticated() && request.auth.uid == uid;
+
+      // Only admins may create user profiles.
+      // A regular user must NEVER be able to self-promote to admin.
+      allow create: if isAdmin()
+        && request.resource.data.keys().hasAll(['name', 'email', 'role'])
+        && request.resource.data.role is string;
+
+      // A user may update their own document but:
+      //   (a) may NOT change the role field.
+      //   (b) admins may update any user document (including role assignment).
+      allow update: if
+        // Admin can update anything
+        isAdmin()
+        // Or: user updates their own doc but cannot change role
+        || (
+          isAuthenticated()
+          && request.auth.uid == uid
+          && (!('role' in request.resource.data)
+              || request.resource.data.role == resource.data.role)
+        );
+
+      // Only admins may delete user documents.
+      allow delete: if isAdmin();
+    }
+
+    // ── employees/{employeeId} ────────────────────────────────────────
+
+    match /employees/{employeeId} {
+      // Only admin can read employee records.
+      allow read: if isAdmin();
+
+      // Only admin can create. Enforce required field types where possible.
+      allow create: if isAdmin()
+        && request.resource.data.keys().hasAll([
+             'firstName', 'lastName', 'email', 'phone',
+             'department', 'position', 'salary',
+             'joiningDate', 'status', 'createdAt', 'updatedAt'
+           ])
+        && request.resource.data.firstName is string
+        && request.resource.data.lastName is string
+        && request.resource.data.email is string
+        && request.resource.data.phone is string
+        && request.resource.data.department is string
+        && request.resource.data.position is string
+        && request.resource.data.salary is number
+        && request.resource.data.salary >= 0
+        && request.resource.data.joiningDate is string
+        && (request.resource.data.status == 'Active'
+            || request.resource.data.status == 'Inactive');
+
+      // Only admin can update. Same field constraints but updatedAt must change.
+      allow update: if isAdmin()
+        && request.resource.data.keys().hasAll([
+             'firstName', 'lastName', 'email', 'phone',
+             'department', 'position', 'salary',
+             'joiningDate', 'status', 'updatedAt'
+           ])
+        && request.resource.data.firstName is string
+        && request.resource.data.lastName is string
+        && request.resource.data.email is string
+        && request.resource.data.phone is string
+        && request.resource.data.department is string
+        && request.resource.data.position is string
+        && request.resource.data.salary is number
+        && request.resource.data.salary >= 0
+        && request.resource.data.joiningDate is string
+        && (request.resource.data.status == 'Active'
+            || request.resource.data.status == 'Inactive');
+
+      // Only admin can delete.
+      allow delete: if isAdmin();
+    }
+
+    // ── Deny everything else ──────────────────────────────────────────
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

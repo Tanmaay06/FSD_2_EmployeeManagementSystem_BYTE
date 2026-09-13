@@ -1,78 +1,76 @@
 import { useEffect, useState } from 'react';
-import Navbar from '../components/Navbar';
+import Sidebar from '../components/Sidebar';
 import EmployeeTable from '../components/EmployeeTable';
-import Loading from '../components/Loading';
 import { getEmployees, deleteEmployee } from '../services/employeeService';
+import { useToast } from '../hooks/useToast';
+
+function SkeletonTable() {
+  return (
+    <div className="table-wrap">
+      {[1,2,3,4,5].map(i => (
+        <div key={i} className="skeleton-row">
+          <div className="skeleton skeleton-avatar" />
+          <div style={{flex:1,display:'flex',flexDirection:'column',gap:6}}>
+            <div className="skeleton skeleton-line" style={{width:'50%'}} />
+            <div className="skeleton skeleton-line skeleton-line--sm" style={{width:'35%'}} />
+          </div>
+          <div className="skeleton skeleton-line" style={{width:70}} />
+          <div className="skeleton skeleton-line" style={{width:55}} />
+        </div>
+      ))}
+    </div>
+  );
+}
 
 export default function Employees() {
   const [employees, setEmployees] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState('');
-  const [successMsg, setSuccessMsg] = useState('');
+  const addToast = useToast();
 
-  useEffect(() => {
-    fetchAll();
-  }, []);
+  useEffect(() => { fetchAll(); }, []);
 
   async function fetchAll() {
-    setIsLoading(true);
-    setError('');
-    try {
-      const data = await getEmployees();
-      setEmployees(data);
-    } catch (err) {
-      console.error('Employees fetch error:', err);
-      setError('Failed to load employees. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
+    setIsLoading(true); setError('');
+    try { setEmployees(await getEmployees()); }
+    catch (err) { console.error('Employees fetch error:', err); setError('Failed to load employees. Please try again.'); }
+    finally { setIsLoading(false); }
   }
 
   async function handleDelete(id) {
     setIsDeleting(true);
-    setError('');
-    setSuccessMsg('');
     try {
       await deleteEmployee(id);
-      setEmployees((prev) => prev.filter((e) => e.id !== id));
-      setSuccessMsg('Employee deleted successfully.');
+      setEmployees(prev => prev.filter(e => e.id !== id));
+      addToast('Employee deleted successfully.', 'success');
     } catch (err) {
       console.error('Delete error:', err);
-      setError('Failed to delete employee. You may not have permission, or a network error occurred.');
-    } finally {
-      setIsDeleting(false);
-    }
+      addToast(err.code === 'permission-denied'
+        ? 'Permission denied. Only admins can delete employees.'
+        : 'Failed to delete employee. Please try again.', 'error');
+    } finally { setIsDeleting(false); }
   }
 
   return (
     <div className="app-layout">
-      <Navbar />
-      <main className="page-content" aria-label="Employees page">
-        <div className="page-header">
-          <div>
-            <h1 className="page-title">Employees</h1>
-            <p className="page-subtitle">Manage your organisation&apos;s employee records</p>
+      <Sidebar />
+      <div className="main-content">
+        <main className="page-content" aria-label="Employees page">
+          <div className="page-header">
+            <div>
+              <h1 className="page-title">Employees</h1>
+              <p className="page-subtitle">Manage your organisation&apos;s employee records</p>
+            </div>
           </div>
-        </div>
 
-        {error && (
-          <div className="alert alert--error" role="alert" aria-live="assertive">{error}</div>
-        )}
-        {successMsg && (
-          <div className="alert alert--success" role="status" aria-live="polite">{successMsg}</div>
-        )}
+          {error && <div className="alert alert--error" role="alert" aria-live="assertive">{error}</div>}
 
-        {isLoading ? (
-          <Loading message="Loading employees…" />
-        ) : (
-          <EmployeeTable
-            employees={employees}
-            onDelete={handleDelete}
-            isDeleting={isDeleting}
-          />
-        )}
-      </main>
+          {isLoading ? <SkeletonTable /> : (
+            <EmployeeTable employees={employees} onDelete={handleDelete} isDeleting={isDeleting} />
+          )}
+        </main>
+      </div>
     </div>
   );
 }

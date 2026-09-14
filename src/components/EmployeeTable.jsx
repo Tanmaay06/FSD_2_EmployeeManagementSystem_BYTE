@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import ConfirmDialog from './ConfirmDialog';
+import { IconSearch, IconPlus, IconFolderOpen } from './Icons';
 
 const SORT_FIELDS = {
   name: (a, b) => `${a.lastName}${a.firstName}`.localeCompare(`${b.lastName}${b.firstName}`),
@@ -58,7 +59,7 @@ export default function EmployeeTable({ employees = [], onDelete, isDeleting = f
     <>
       <div className="table-controls">
         <div className="table-controls__search">
-          <span className="table-controls__search-icon" aria-hidden="true">🔍</span>
+          <span className="table-controls__search-icon" aria-hidden="true"><IconSearch size={15} /></span>
           <input id="employee-search" type="search" className="form-input table-controls__input"
             placeholder="Search name, email, position…" value={search}
             onChange={e => setSearch(e.target.value)} aria-label="Search employees" />
@@ -76,7 +77,7 @@ export default function EmployeeTable({ employees = [], onDelete, isDeleting = f
             <option value="Inactive">Inactive</option>
           </select>
         </div>
-        <Link to="/dashboard/employees/new" className="btn btn--primary" id="add-employee-btn">+ Add Employee</Link>
+        <Link to="/dashboard/employees/new" className="btn btn--primary" id="add-employee-btn"><IconPlus size={14} strokeWidth={2.5} /> Add Employee</Link>
       </div>
 
       <p className="table-count" aria-live="polite">
@@ -85,7 +86,7 @@ export default function EmployeeTable({ employees = [], onDelete, isDeleting = f
 
       {filtered.length === 0 ? (
         <div className="empty-state">
-          <div className="empty-state__art" aria-hidden="true">🗂️</div>
+          <div className="empty-state__art"><IconFolderOpen size={36} color="var(--primary)" strokeWidth={1.5} /></div>
           <p className="empty-state__title">No employees found</p>
           <p className="empty-state__subtitle">
             {employees.length === 0 ? 'Get started by adding your first employee.' : 'Try adjusting your search or filters.'}

@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import { auth, db } from '../firebase/firebase';
+import { IconUsers, IconMail, IconLock, IconEye, IconEyeOff, IconShield, IconCheck } from '../components/Icons';
 import './Login.css';
 
 function humanizeAuthError(code) {
@@ -22,11 +23,19 @@ function humanizeAuthError(code) {
   }
 }
 
+const BRAND_FEATURES = [
+  'Role-based admin authentication',
+  'Real-time Firestore database',
+  'Secure CRUD operations',
+  'Responsive dashboard interface',
+];
+
 export default function Login() {
-  const [email, setEmail] = useState('');
+  const [email, setEmail]       = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [shaking, setShaking] = useState(false);
+  const [showPwd, setShowPwd]   = useState(false);
+  const [error, setError]       = useState('');
+  const [shaking, setShaking]   = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
@@ -44,7 +53,7 @@ export default function Login() {
     setIsLoading(true);
     try {
       const cred = await signInWithEmailAndPassword(auth, email.trim(), password);
-      const uid = cred.user.uid;
+      const uid  = cred.user.uid;
 
       let snap;
       try {
@@ -82,88 +91,152 @@ export default function Login() {
 
   return (
     <main className="login-page" aria-label="Login page">
-      {/* Left branding panel */}
+      {/* ── Left branding panel ── */}
       <div className="login-panel login-panel--brand" aria-hidden="true">
-        <div className="login-panel__blobs">
-          <div className="lp-blob lp-blob--1" />
-          <div className="lp-blob lp-blob--2" />
+        <div className="lp-brand__orbs">
+          <div className="lp-orb lp-orb--1" />
+          <div className="lp-orb lp-orb--2" />
+          <div className="lp-orb lp-orb--3" />
         </div>
         <div className="login-panel__content">
+          {/* Brand logo mark */}
           <div className="login-brand">
-            <span className="login-brand__logo">👥</span>
+            <div className="login-brand__logo-wrap">
+              <IconUsers size={22} color="#fff" strokeWidth={2} />
+            </div>
             <span className="login-brand__name">EMS<strong>Pro</strong></span>
           </div>
+
           <h2 className="login-panel__headline">
-            The modern way to manage your workforce
+            The modern way to manage your <span>workforce</span>
           </h2>
-          <ul className="login-panel__features">
-            {['Role-based admin authentication','Real-time Firestore database','Secure CRUD operations','Responsive dashboard interface'].map(f => (
-              <li key={f}><span aria-hidden="true">✓</span> {f}</li>
+
+          <ul className="login-panel__features" aria-label="Platform features">
+            {BRAND_FEATURES.map(f => (
+              <li key={f}>
+                <div className="login-check">
+                  <IconCheck size={11} strokeWidth={3} color="#4ade80" />
+                </div>
+                {f}
+              </li>
             ))}
           </ul>
-          <div className="login-panel__badge">AVIP 2026 · Task 2</div>
+
+          <div className="login-panel__badge">
+            <IconShield size={12} color="#a5b4fc" /> AVIP 2026 · Task 2
+          </div>
         </div>
       </div>
 
-      {/* Right form panel */}
+      {/* ── Right form panel ── */}
       <div className="login-panel login-panel--form">
         <div className="login-form-wrap">
+          {/* Back link */}
+          <Link to="/" className="login-form-back" aria-label="Return to home page">
+            ← Back to Home
+          </Link>
+
+          {/* Logo mark */}
+          <div className="login-form-logo">
+            <IconUsers size={26} color="var(--primary)" strokeWidth={1.75} />
+          </div>
+
           <div className="login-form-header">
             <h1 className="login-form-title">Welcome back</h1>
             <p className="login-form-sub">Sign in with your administrator account</p>
           </div>
 
+          {/* Error alert */}
           {error && (
-            <div className={`alert alert--error${shaking ? ' shake' : ''}`} role="alert" id="login-error">
+            <div
+              className={`alert alert--error${shaking ? ' shake' : ''}`}
+              role="alert"
+              aria-live="assertive"
+              id="login-error"
+            >
               {error}
             </div>
           )}
 
           <form onSubmit={handleSubmit} noValidate className="login-form">
+            {/* Email */}
             <div className="form-group">
               <label htmlFor="login-email" className="form-label">Email Address</label>
               <div className="input-icon-wrap">
-                <span className="input-icon" aria-hidden="true">✉</span>
+                <span className="input-icon"><IconMail size={15} /></span>
                 <input
-                  id="login-email" type="email" className="form-input input-with-icon"
-                  value={email} onChange={e => setEmail(e.target.value)}
+                  id="login-email"
+                  type="email"
+                  className="form-input input-with-icon"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
                   placeholder="admin@example.com"
-                  autoComplete="email" disabled={isLoading} required
+                  autoComplete="email"
+                  disabled={isLoading}
+                  required
+                  aria-describedby={error ? 'login-error' : undefined}
                 />
               </div>
             </div>
 
+            {/* Password */}
             <div className="form-group">
               <label htmlFor="login-password" className="form-label">Password</label>
               <div className="input-icon-wrap">
-                <span className="input-icon" aria-hidden="true">🔒</span>
+                <span className="input-icon"><IconLock size={15} /></span>
                 <input
-                  id="login-password" type="password" className="form-input input-with-icon"
-                  value={password} onChange={e => setPassword(e.target.value)}
+                  id="login-password"
+                  type={showPwd ? 'text' : 'password'}
+                  className="form-input input-with-icon"
+                  style={{ paddingRight: '3rem' }}
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  autoComplete="current-password" disabled={isLoading} required
+                  autoComplete="current-password"
+                  disabled={isLoading}
+                  required
                 />
+                <button
+                  type="button"
+                  className="input-icon-toggle"
+                  onClick={() => setShowPwd(v => !v)}
+                  aria-label={showPwd ? 'Hide password' : 'Show password'}
+                >
+                  {showPwd
+                    ? <IconEyeOff size={15} />
+                    : <IconEye size={15} />
+                  }
+                </button>
               </div>
             </div>
 
+            {/* Submit */}
             <button
-              type="submit" className="btn btn--primary btn--full btn--lg login-submit-btn"
-              disabled={isLoading} id="login-submit-btn"
+              type="submit"
+              className="btn btn--primary btn--full btn--lg login-submit-btn"
+              disabled={isLoading}
+              id="login-submit-btn"
+              aria-busy={isLoading}
             >
               {isLoading ? (
                 <span className="btn__loading-content">
                   <span className="btn__spinner" aria-hidden="true" />
                   Verifying…
                 </span>
-              ) : 'Sign In →'}
+              ) : 'Sign In'}
             </button>
           </form>
 
+          {/* Footer */}
           <p className="login-form-footer">
-            Employee Management System &mdash; AVIP 2026 Task 2
+            Employee Management System — AVIP 2026 Task 2
           </p>
+
+          {/* Security row */}
+          
+          </div>
         </div>
-      </div>
+      
     </main>
   );
 }
